@@ -181,6 +181,8 @@ namespace System.Linq.Dynamic
             void OrderByDescending(object selector);
             void Contains(object selector);
 
+            void OfType(string type);
+
             //Executors
             void Single();
             void SingleOrDefault();
@@ -1119,7 +1121,7 @@ namespace System.Linq.Dynamic
 
             _parent = _it;
 
-            if (methodName == "Contains")
+            if (methodName == "Contains" || methodName == "OfType")
             {
                 //for any method that acts on the parent element type, we need to specify the outerIt as scope.
                 _it = outerIt;
@@ -1138,19 +1140,18 @@ namespace System.Linq.Dynamic
             if (FindMethod(typeof(IEnumerableSignatures), methodName, false, args, out signature) != 1)
                 throw ParseError(errorPos, Res.NoApplicableAggregate, methodName);
             Type[] typeArgs;
-            if (
-                signature.Name == "Min" || 
-                signature.Name == "Max" || 
-                signature.Name == "Select" ||
-                signature.Name == "OrderBy" ||
-                signature.Name == "OrderByDescending" 
-                )
+            if (signature.Name == "Min" || signature.Name == "Max" || signature.Name == "Select" ||
+                signature.Name == "OrderBy" || signature.Name == "OrderByDescending")
             {
-                typeArgs = new Type[] { elementType, args[0].Type };
+                typeArgs = new Type[] {elementType, args[0].Type};
+            }
+            else if (signature.Name == "OfType")
+            {
+                return OfTypeMethodCallExpression(instance, errorPos, args, signature);
             }
             else
             {
-                typeArgs = new Type[] { elementType };
+                typeArgs = new Type[] {elementType};
             }
 
             if( signature.Name == "Contains")
@@ -1167,6 +1168,25 @@ namespace System.Linq.Dynamic
             }
 
             return Expression.Call(typeof(Enumerable), signature.Name, typeArgs, args);
+        }
+
+        private static Expression OfTypeMethodCallExpression(Expression instance, int errorPos, Expression[] args,
+            MethodBase signature)
+        {
+            var constExpression = args[0] as ConstantExpression;
+            if (constExpression == null) throw ParseError(errorPos, "Expected OfType(\"Type\")");
+            var constTypeString = constExpression.Value.ToString();
+            var parsedType =
+                Assembly.GetExecutingAssembly().GetType(constTypeString) ??
+                _predefinedTypes.FirstOrDefault(t => t.FullName == constTypeString) ??
+                _predefinedTypes.FirstOrDefault(t => t.Name == constTypeString) ??
+                GlobalConfig.CustomTypeProvider.GetCustomTypes().FirstOrDefault(t => t.FullName == constTypeString) ??
+                GlobalConfig.CustomTypeProvider.GetCustomTypes().FirstOrDefault(t => t.Name == constTypeString);
+
+            if (parsedType == null)
+                throw ParseError(errorPos, "String constant representing Type expected for OfType aggregate method.");
+
+            return Expression.Call(typeof (Enumerable), signature.Name, new[] { parsedType }, instance);
         }
 
         Expression[] ParseArgumentList()

@@ -54,4 +54,10 @@ namespace System.Linq.Dynamic.Tests.Helpers.Entities
             return PostId.Equals(other.PostId);
         }
     }
+
+    [DynamicLinqType] //For OfType Test
+    public class SpecialPost : Post
+    {
+        public string ReasonIsSpecial { get; set; }
+    }
 }

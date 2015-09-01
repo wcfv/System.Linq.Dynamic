@@ -55,7 +55,7 @@ namespace System.Linq.Dynamic.Tests
             _context = null;
         }
 
-        void PopulateTestData(int blogCount = 25, int postCount = 10)
+        void PopulateTestData(int blogCount = 25, int postCount = 10, int specialPostCount = 0)
         {
             for (int i = 0; i < blogCount; i++)
             {
@@ -72,6 +72,21 @@ namespace System.Linq.Dynamic.Tests
                         Content = "My Content",
                         PostDate = DateTime.Today.AddDays(-Rnd.Next(0,100)).AddSeconds(Rnd.Next(0, 30000)),
                         NumberOfReads = Rnd.Next(0, 5000)
+                    };
+
+                    _context.Posts.Add(post);
+                }
+
+                for (int j = 0; j < specialPostCount; j++)
+                {
+                    var post = new SpecialPost()
+                    {
+                        Blog = blog,
+                        Title = String.Format("Blog {0} - Post {1}", i + 1, j + 1),
+                        Content = "My Content",
+                        PostDate = DateTime.Today.AddDays(-Rnd.Next(0, 100)).AddSeconds(Rnd.Next(0, 30000)),
+                        NumberOfReads = Rnd.Next(0, 5000),
+                        ReasonIsSpecial = String.Format("Special Reason #{0}", Rnd.Next(0, 42))
                     };
 
                     _context.Posts.Add(post);
@@ -159,6 +174,26 @@ namespace System.Linq.Dynamic.Tests
             }
         }
 
+        #endregion
+
+        #region OfType Tests
+        [TestMethod]
+        public void Entities_Select_Field_From_OfType()
+        {
+            //Arrange
+            PopulateTestData(5, 0, 1);
+
+            var expected = _context.Blogs.Select(b => b.Posts.OfType<SpecialPost>().FirstOrDefault().ReasonIsSpecial).ToArray();
+
+            var specialPostTypeString = typeof(SpecialPost).FullName;
+            //Act
+            var dynamicSelectStatement = String.Format("Posts.OfType(\"{0}\").FirstOrDefault().ReasonIsSpecial",
+                specialPostTypeString);
+            var test = _context.Blogs.Select(dynamicSelectStatement).ToDynamicArray();
+
+            //Assert
+            CollectionAssert.AreEqual(expected, test);
+        }
         #endregion
 
         #region GroupBy Tests
