@@ -182,6 +182,8 @@ namespace System.Linq.Dynamic
             void Contains(object selector);
 
             void OfType(string type);
+            void Skip(int i);
+            void Take(int i);
 
             //Executors
             void Single();
@@ -1121,7 +1123,7 @@ namespace System.Linq.Dynamic
 
             _parent = _it;
 
-            if (methodName == "Contains" || methodName == "OfType")
+            if (methodName == "Contains" || methodName == "OfType" || methodName == "Skip" || methodName == "Take")
             {
                 //for any method that acts on the parent element type, we need to specify the outerIt as scope.
                 _it = outerIt;
@@ -1154,7 +1156,7 @@ namespace System.Linq.Dynamic
                 typeArgs = new Type[] {elementType};
             }
 
-            if( signature.Name == "Contains")
+            if (signature.Name == "Contains" || signature.Name == "Take" || signature.Name == "Skip")
             {
                 args = new Expression[] { instance, args[0] };
             }
