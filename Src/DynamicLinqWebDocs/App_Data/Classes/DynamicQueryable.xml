@@ -181,7 +181,39 @@ foreach (int num in squares)
 var singleField = qry.Select("StringProperty");
     
 //Select a group of fields
-var dynamicObject = qry.Select("new (StringProperty1, StringProperty2 as OtherStringPropertyName)");</ExampleCode>
+var dynamicObject = qry.Select("new (StringProperty1, StringProperty2 as OtherStringPropertyName)");
+              </ExampleCode>
+            </Example>
+            <Example>
+              <HeaderRemarks>The following code example demonstrates how to use OfType inside a `Select`.</HeaderRemarks>
+              <ExampleCode>
+                class ExampleClass
+                {
+                public List&lt;Animal%gt; Animals
+                }
+
+                [DynamicLinqType]
+                class Tiger : Animal { }
+
+                var firstTigers = listOfExampleClass.Select("Animals.OfType(\"Tiger\").FirstOrDefault()");
+              </ExampleCode>
+              <EquivalentCode>
+                var firstTigers = listOfExampleClass.Select(example => example.Animals.OfType&lt;Tiger&gt;().FirstOrDefault());
+              </EquivalentCode>
+            </Example>
+            <Example>
+              <HeaderRemarks>The following code example demonstrates how to use Skip, Take inside a `Select`.</HeaderRemarks>
+              <ExampleCode>
+                class ExampleClass
+                {
+                public List&lt;Animal%gt; Animals
+                }
+
+                var result = listOfExampleClass.Select("new { Animals.Skip(1).Take(1) AS SecondAnimal }");
+              </ExampleCode>
+              <EquivalentCode>
+                var result = listOfExampleClass.Select(example => new { SecondAnimal = example.Animals.Skip(1).Take(1) });
+              </EquivalentCode>
             </Example>
           </Examples>
         </Method>
