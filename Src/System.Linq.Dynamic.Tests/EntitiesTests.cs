@@ -71,6 +71,7 @@ namespace System.Linq.Dynamic.Tests
                         Title = String.Format("Blog {0} - Post {1}", i + 1, j + 1),
                         Content = "My Content",
                         PostDate = DateTime.Today.AddDays(-Rnd.Next(0,100)).AddSeconds(Rnd.Next(0, 30000)),
+                        PostGlobalId = Guid.NewGuid(),
                         NumberOfReads = Rnd.Next(0, 5000)
                     };
 
@@ -177,25 +178,124 @@ namespace System.Linq.Dynamic.Tests
         #endregion
 
         #region OfType Tests
+
         [TestMethod]
         public void Entities_Select_Field_From_OfType()
         {
             //Arrange
             PopulateTestData(5, 0, 1);
 
-            var expected = _context.Blogs.Select(b => b.Posts.OfType<SpecialPost>().FirstOrDefault().ReasonIsSpecial).ToArray();
+            var expected =
+                _context.Blogs.Select(b => b.Posts.OfType<SpecialPost>().FirstOrDefault().ReasonIsSpecial).ToArray();
 
-            var specialPostTypeString = typeof(SpecialPost).FullName;
+            var specialPostTypeString = typeof (SpecialPost).FullName;
             //Act
             var dynamicSelectStatement = String.Format("Posts.OfType(\"{0}\").FirstOrDefault().ReasonIsSpecial",
                 specialPostTypeString);
             var test = _context.Blogs.Select(dynamicSelectStatement).ToDynamicArray();
+        }
+
+        #endregion
+
+        #region Where Tests
+
+        [TestMethod]
+        public void Entities_Where_ByDateTime_AsObject()
+        {
+            //Arrange
+            PopulateTestData(5, 5);
+
+            var utcNow = DateTime.UtcNow;
+            var expected = _context.Posts.Where(x => x.PostDate > utcNow).ToArray();
+
+            //Act
+            var test = _context.Posts.Where("PostDate > @0", utcNow).ToDynamicArray();
+            
+            //Assert
+            CollectionAssert.AreEqual(expected, test);
+        }
+
+        [TestMethod]
+        public void Entities_Where_ByDateTime_AsTypeAccess()
+        {
+            //Arrange
+            PopulateTestData(5, 5);
+
+            var utcNow = DateTime.UtcNow;
+            var expected = _context.Posts.Where(x => x.PostDate > utcNow).ToArray();
+
+            //Act
+            var test = _context.Posts.Where("PostDate > DateTime(\"" + utcNow + "\")").ToDynamicArray();
 
             //Assert
             CollectionAssert.AreEqual(expected, test);
         }
-        #endregion
 
+        [TestMethod]
+        public void Entities_Where_ByDateTime_AsTypeAccessShorthand()
+        {
+            //Arrange
+            PopulateTestData(5, 5);
+
+            var utcNow = DateTime.UtcNow;
+            var expected = _context.Posts.Where(x => x.PostDate > utcNow).ToArray();
+
+            //Act
+            var test = _context.Posts.Where("PostDate > DateTime\"" + utcNow + "\"").ToDynamicArray();
+
+            //Assert
+            CollectionAssert.AreEqual(expected, test);
+        }
+
+        [TestMethod]
+        public void Entities_Where_ByGuid_AsObject()
+        {
+            //Arrange
+            PopulateTestData(5, 5);
+
+            var newGuid = Guid.NewGuid();
+            var expected = _context.Posts.Where(x => x.PostGlobalId != newGuid).ToArray();
+
+            //Act
+            var test = _context.Posts.Where("PostGlobalId != @0", newGuid).ToDynamicArray();
+
+            //Assert
+            CollectionAssert.AreEqual(expected, test);
+        }
+
+        [TestMethod]
+        public void Entities_Where_ByGuid_AsTypeAccess()
+        {
+            //Arrange
+            PopulateTestData(5, 5);
+
+            var newGuid = Guid.NewGuid();
+            var expected = _context.Posts.Where(x => x.PostGlobalId != newGuid).ToArray();
+
+            //Act
+            var test = _context.Posts.Where("PostGlobalId != Guid(\"" + newGuid.ToString() + "\")").ToDynamicArray();
+
+            //Assert
+            CollectionAssert.AreEqual(expected, test);
+        }
+
+        [TestMethod]
+        public void Entities_Where_ByGuid_AsTypeAccessShorthand()
+        {
+            //Arrange
+            PopulateTestData(5, 5);
+
+            var newGuid = Guid.NewGuid();
+            var expected = _context.Posts.Where(x => x.PostGlobalId != newGuid).ToArray();
+
+            //Act
+            var test = _context.Posts.Where("PostGlobalId != Guid\"" + newGuid.ToString() + "\"").ToDynamicArray();
+
+            //Assert
+            CollectionAssert.AreEqual(expected, test);
+        }
+
+        #endregion
         #region GroupBy Tests
 
         [TestMethod]
