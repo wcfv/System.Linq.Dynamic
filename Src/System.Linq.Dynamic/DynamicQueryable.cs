@@ -1,7 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using System.Linq.Expressions;
-using FluentValidationNA;
 
 namespace System.Linq.Dynamic
 {
@@ -51,8 +50,8 @@ namespace System.Linq.Dynamic
         /// </example>
         public static IQueryable Where(this IQueryable source, string predicate, params object[] args)
         {
-            Validate.Argument(source, "source").IsNotNull().Check()
-                    .Argument(predicate, "predicate").IsNotNull().IsNotEmpty().IsNotWhiteSpace().Check();
+            if (source == null) throw new ArgumentNullException(nameof(source));
+            if (string.IsNullOrEmpty(predicate?.Trim())) throw new ArgumentNullException(nameof(predicate)); //string.IsNullOrWhiteSpace not available in NET35
 
             LambdaExpression lambda = DynamicExpression.ParseLambda(source.ElementType, typeof(bool), predicate, args);
             return source.Provider.CreateQuery(
@@ -81,8 +80,8 @@ namespace System.Linq.Dynamic
         /// </example>
         public static IQueryable Select(this IQueryable source, string selector, params object[] args)
         {
-            Validate.Argument(source, "source").IsNotNull().Check()
-                    .Argument(selector, "selector").IsNotNull().IsNotEmpty().IsNotWhiteSpace().Check();
+            if (source == null) throw new ArgumentNullException(nameof(source));
+            if (string.IsNullOrEmpty(selector?.Trim())) throw new ArgumentNullException(nameof(selector)); //string.IsNullOrWhiteSpace not available in NET35
 
             LambdaExpression lambda = DynamicExpression.ParseLambda(source.ElementType, null, selector, args);
             return source.Provider.CreateQuery(
@@ -106,8 +105,8 @@ namespace System.Linq.Dynamic
         /// <returns>An <see cref="IQueryable"/> whose elements are the result of invoking a one-to-many projection function on each element of the input sequence.</returns>
         public static IQueryable SelectMany(this IQueryable source, string selector, params object[] args)
         {
-            Validate.Argument(source, "source").IsNotNull().Check()
-                    .Argument(selector, "selector").IsNotNull().IsNotEmpty().IsNotWhiteSpace().Check();
+            if (source == null) throw new ArgumentNullException(nameof(source));
+            if (string.IsNullOrEmpty(selector?.Trim())) throw new ArgumentNullException(nameof(selector)); //string.IsNullOrWhiteSpace not available in NET35
 
             LambdaExpression lambda = DynamicExpression.ParseLambda(source.ElementType, null, selector, args);
 
@@ -146,10 +145,10 @@ namespace System.Linq.Dynamic
         /// </returns>
         public static IQueryable SelectMany(this IQueryable source, string collectionSelector, string resultSelector, object[] collectionSelectorArgs = null, object[] resultSelectorArgs = null)
         {
-            Validate.Argument(source, "source").IsNotNull().Check()
-                    .Argument(collectionSelector, "collectionSelector").IsNotNull().IsNotEmpty().IsNotWhiteSpace().Check()
-                    .Argument(resultSelector, "resultSelector").IsNotNull().IsNotEmpty().IsNotWhiteSpace().Check();
-
+            if (source == null) throw new ArgumentNullException(nameof(source));
+            if (string.IsNullOrEmpty(collectionSelector?.Trim())) throw new ArgumentNullException(nameof(collectionSelector)); //string.IsNullOrWhiteSpace not available in NET35
+            if (string.IsNullOrEmpty(resultSelector?.Trim())) throw new ArgumentNullException(nameof(resultSelector)); //string.IsNullOrWhiteSpace not available in NET35
+            
             LambdaExpression sourceSelectLambda = DynamicExpression.ParseLambda(source.ElementType, null, collectionSelector, collectionSelectorArgs);
             
             //we have to adjust to lambda to return an IEnumerable<T> instead of whatever the actual property is.
@@ -210,9 +209,8 @@ namespace System.Linq.Dynamic
         /// </example>
         public static IOrderedQueryable OrderBy(this IQueryable source, string ordering, params object[] args)
         {
-            Validate.Argument(source, "source").IsNotNull().Check()
-                    .Argument(ordering, "ordering").IsNotNull().IsNotEmpty().IsNotWhiteSpace().Check();
-
+            if (source == null) throw new ArgumentNullException(nameof(source));
+            if (string.IsNullOrEmpty(ordering?.Trim())) throw new ArgumentNullException(nameof(ordering)); //string.IsNullOrWhiteSpace not available in NET35
 
             ParameterExpression[] parameters = new ParameterExpression[] {
                 Expression.Parameter(source.ElementType, "") };
@@ -254,10 +252,10 @@ namespace System.Linq.Dynamic
         /// </example>
         public static IQueryable GroupBy(this IQueryable source, string keySelector, string resultSelector, object[] args)
         {
-            Validate.Argument(source, "source").IsNotNull().Check()
-                    .Argument(keySelector, "keySelector").IsNotNull().IsNotEmpty().IsNotWhiteSpace().Check()
-                    .Argument(resultSelector, "resultSelector").IsNotNull().IsNotEmpty().IsNotWhiteSpace().Check();
-
+            if (source == null) throw new ArgumentNullException(nameof(source));
+            if (string.IsNullOrEmpty(keySelector?.Trim())) throw new ArgumentNullException(nameof(keySelector)); //string.IsNullOrWhiteSpace not available in NET35
+            if (string.IsNullOrEmpty(resultSelector?.Trim())) throw new ArgumentNullException(nameof(resultSelector)); //string.IsNullOrWhiteSpace not available in NET35
+            
             LambdaExpression keyLambda = DynamicExpression.ParseLambda(source.ElementType, null, keySelector, args);
             LambdaExpression elementLambda = DynamicExpression.ParseLambda(source.ElementType, null, resultSelector, args);
 
@@ -304,8 +302,8 @@ namespace System.Linq.Dynamic
         /// </example>
         public static IQueryable GroupBy(this IQueryable source, string keySelector, object[] args)
         {
-            Validate.Argument(source, "source").IsNotNull().Check()
-                .Argument(keySelector, "keySelector").IsNotNull().IsNotEmpty().IsNotWhiteSpace().Check();
+            if (source == null) throw new ArgumentNullException(nameof(source));
+            if (string.IsNullOrEmpty(keySelector?.Trim())) throw new ArgumentNullException(nameof(keySelector)); //string.IsNullOrWhiteSpace not available in NET35
 
             LambdaExpression keyLambda = DynamicExpression.ParseLambda(source.ElementType, null, keySelector, args);
 
@@ -349,9 +347,9 @@ namespace System.Linq.Dynamic
         /// <returns>A <see cref="IEnumerable{T}"/> of type <see cref="GroupResult"/> where each element represents a projection over a group, its key, and its subgroups.</returns>
         public static IEnumerable<GroupResult> GroupByMany<TElement>(this IEnumerable<TElement> source, params string[] keySelectors)
         {
-            Validate.Argument(source, "elements").IsNotNull().Check()
-                    .Argument(keySelectors, "keySelectors").IsNotNull().IsNotEmpty().Check();
-
+            if (source == null) throw new ArgumentNullException(nameof(source));
+            if (keySelectors == null || keySelectors.Length == 0) throw new ArgumentNullException(nameof(keySelectors));
+            
             var selectors = new List<Func<TElement, object>>(keySelectors.Length);
 
             foreach (var selector in keySelectors)
@@ -373,8 +371,8 @@ namespace System.Linq.Dynamic
         /// <returns>A <see cref="IEnumerable{T}"/> of type <see cref="GroupResult"/> where each element represents a projection over a group, its key, and its subgroups.</returns>
         public static IEnumerable<GroupResult> GroupByMany<TElement>(this IEnumerable<TElement> source, params Func<TElement, object>[] keySelectors)
         {
-            Validate.Argument(source, "elements").IsNotNull().Check()
-                    .Argument(keySelectors, "keySelectors").IsNotNull().IsNotEmpty().Check();
+            if (source == null) throw new ArgumentNullException(nameof(source));
+            if (keySelectors == null || keySelectors.Length == 0) throw new ArgumentNullException(nameof(keySelectors));
 
             return GroupByManyInternal(source, keySelectors, 0);
         }
@@ -415,12 +413,13 @@ namespace System.Linq.Dynamic
         {
             //http://stackoverflow.com/questions/389094/how-to-create-a-dynamic-linq-join-extension-method
 
-            Validate.Argument(outer, "outer").IsNotNull().Check()
-                    .Argument(inner, "inner").IsNotNull().Check()
-                    .Argument(outerKeySelector, "outerKeySelector").IsNotNull().IsNotEmpty().IsNotWhiteSpace().Check()
-                    .Argument(innerKeySelector, "innerKeySelector").IsNotNull().IsNotEmpty().IsNotWhiteSpace().Check()
-                    .Argument(resultSelector, "resultSelector").IsNotNull().IsNotEmpty().IsNotWhiteSpace().Check();
+            if (outer == null) throw new ArgumentNullException(nameof(outer));
+            if (inner == null) throw new ArgumentNullException(nameof(inner));
+            if (string.IsNullOrEmpty(outerKeySelector)) throw new ArgumentNullException(nameof(outerKeySelector));
+            if (string.IsNullOrEmpty(innerKeySelector)) throw new ArgumentNullException(nameof(innerKeySelector));
+            if (string.IsNullOrEmpty(resultSelector)) throw new ArgumentNullException(nameof(resultSelector));
 
+            
             LambdaExpression outerSelectorLambda = DynamicExpression.ParseLambda(outer.ElementType, null, outerKeySelector, args);
             LambdaExpression innerSelectorLambda = DynamicExpression.ParseLambda(inner.AsQueryable().ElementType, null, innerKeySelector, args);
 
@@ -468,9 +467,10 @@ namespace System.Linq.Dynamic
         /// <exception cref="ArgumentNullException"><paramref name="first" /> or <paramref name="second" /> is null.</exception>
         public static IQueryable UnionAll(this IQueryable first, IEnumerable second)
         {
-            Validate.Argument(first, "first").IsNotNull().Check()
-                    .Argument(second, "second").IsNotNull().Check();
+            if (first == null) throw new ArgumentNullException(nameof(first));
+            if (second == null) throw new ArgumentNullException(nameof(second));
 
+            
             return first.Provider.CreateQuery(
                 Expression.Call(
                     typeof(Queryable), "Union",

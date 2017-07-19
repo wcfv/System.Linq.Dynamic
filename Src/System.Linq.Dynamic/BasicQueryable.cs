@@ -1,5 +1,4 @@
-﻿using FluentValidationNA;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 
@@ -22,9 +21,9 @@ namespace System.Linq.Dynamic
         /// <returns>A <see cref="IQueryable"/> that contains the specified number of elements from the start of source.</returns>
         public static IQueryable Take(this IQueryable source, int count)
         {
-            Validate.Argument(source, "source").IsNotNull().Check()
-                    .Argument(count, "count").IsInRange(x => x > 0).Check();
-
+            if (source == null) throw new ArgumentNullException(nameof(source));
+            if (count <= 0) throw new ArgumentOutOfRangeException(nameof(count));
+            
             return source.Provider.CreateQuery(
                 Expression.Call(
                     typeof(Queryable), "Take",
@@ -40,9 +39,9 @@ namespace System.Linq.Dynamic
         /// <returns>A <see cref="IQueryable"/> that contains elements that occur after the specified index in the input sequence.</returns>
         public static IQueryable Skip(this IQueryable source, int count)
         {
-            Validate.Argument(source, "source").IsNotNull().Check()
-                    .Argument(count, "count").IsInRange(x => x >= 0).Check();
-
+            if (source == null) throw new ArgumentNullException(nameof(source));
+            if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
+            
             //no need to skip if count is zero
             if (count == 0) return source;
 
@@ -61,7 +60,7 @@ namespace System.Linq.Dynamic
         /// <returns>A <see cref="IQueryable"/> whose elements correspond to those of the input sequence in reverse order.</returns>
         public static IQueryable Reverse(this IQueryable source)
         {
-            Validate.Argument(source, "source").IsNotNull().Check();
+            if (source == null) throw new ArgumentNullException(nameof(source));
 
             return source.Provider.CreateQuery(Expression.Call(
                 typeof(Queryable), "Reverse",
@@ -75,7 +74,7 @@ namespace System.Linq.Dynamic
         /// <returns>A <see cref="IQueryable"/> contains distinct elements from source.</returns>
         public static IQueryable Distinct(this IQueryable source)
         {
-            Validate.Argument(source, "source").IsNotNull().Check();
+            if (source == null) throw new ArgumentNullException(nameof(source));
 
             return source.Provider.CreateQuery(Expression.Call(
                 typeof(Queryable), "Distinct",
@@ -89,7 +88,7 @@ namespace System.Linq.Dynamic
         /// <returns>An <see cref="IQueryable"/> that contains default(TSource) if source is empty; otherwise, source.</returns>
         public static IQueryable DefaultIfEmpty(this IQueryable source)
         {
-            Validate.Argument(source, "source").IsNotNull().Check();
+            if (source == null) throw new ArgumentNullException(nameof(source));
 
             return source.Provider.CreateQuery(
                 Expression.Call(
@@ -108,7 +107,7 @@ namespace System.Linq.Dynamic
         /// <returns>true if the source sequence contains any elements; otherwise, false.</returns>
         public static bool Any(this IQueryable source)
         {
-            Validate.Argument(source, "source").IsNotNull().Check();
+            if (source == null) throw new ArgumentNullException(nameof(source));
 
             return (bool)source.Provider.Execute(
                 Expression.Call(
@@ -123,8 +122,8 @@ namespace System.Linq.Dynamic
         /// <returns>The number of elements in the input sequence.</returns>
         public static int Count(this IQueryable source)
         {
-            Validate.Argument(source, "source").IsNotNull().Check();
-
+            if (source == null) throw new ArgumentNullException(nameof(source));
+            
             return (int)source.Provider.Execute(
                 Expression.Call(
                     typeof(Queryable), "Count",
@@ -138,7 +137,7 @@ namespace System.Linq.Dynamic
         /// <returns>The number of elements in the input sequence.</returns>
         public static long LongCount(this IQueryable source)
         {
-            Validate.Argument(source, "source").IsNotNull().Check();
+            if (source == null) throw new ArgumentNullException(nameof(source));
 
             return (long)source.Provider.Execute(
                 Expression.Call(
@@ -153,7 +152,7 @@ namespace System.Linq.Dynamic
         /// <returns>The sum of the values in the sequence.</returns>
         public static object Sum(this IQueryable source)
         {
-            Validate.Argument(source, "source").IsNotNull().Check();
+            if (source == null) throw new ArgumentNullException(nameof(source));
 
             return source.Provider.Execute(
                 Expression.Call(
@@ -178,7 +177,7 @@ namespace System.Linq.Dynamic
         public static dynamic Single(this IQueryable source)
 #endif
         {
-            Validate.Argument(source, "source").IsNotNull().Check();
+            if (source == null) throw new ArgumentNullException(nameof(source));
 
             return source.Provider.Execute(Expression.Call(
                 typeof(Queryable), "Single",
@@ -198,7 +197,7 @@ namespace System.Linq.Dynamic
         public static dynamic SingleOrDefault(this IQueryable source)
 #endif
         {
-            Validate.Argument(source, "source").IsNotNull().Check();
+            if (source == null) throw new ArgumentNullException(nameof(source));
 
             return source.Provider.Execute(Expression.Call(
                 typeof(Queryable), "SingleOrDefault",
@@ -216,7 +215,7 @@ namespace System.Linq.Dynamic
         public static dynamic First(this IQueryable source)
 #endif
         {
-            Validate.Argument(source, "source").IsNotNull().Check();
+            if (source == null) throw new ArgumentNullException(nameof(source));
 
             return source.Provider.Execute(Expression.Call(
                 typeof(Queryable), "First",
@@ -234,7 +233,7 @@ namespace System.Linq.Dynamic
         public static dynamic FirstOrDefault(this IQueryable source)
 #endif
         {
-            Validate.Argument(source, "source").IsNotNull().Check();
+            if (source == null) throw new ArgumentNullException(nameof(source));
 
             return source.Provider.Execute(Expression.Call(
                 typeof(Queryable), "FirstOrDefault",
@@ -252,7 +251,7 @@ namespace System.Linq.Dynamic
         public static dynamic Last(this IQueryable source)
 #endif
         {
-            Validate.Argument(source, "source").IsNotNull().Check();
+            if (source == null) throw new ArgumentNullException(nameof(source));
 
             return source.Provider.Execute(Expression.Call(
                 typeof(Queryable), "Last",
@@ -270,7 +269,7 @@ namespace System.Linq.Dynamic
         public static dynamic LastOrDefault(this IQueryable source)
 #endif
         {
-            Validate.Argument(source, "source").IsNotNull().Check();
+            if (source == null) throw new ArgumentNullException(nameof(source));
 
             return source.Provider.Execute(Expression.Call(
                 typeof(Queryable), "LastOrDefault",

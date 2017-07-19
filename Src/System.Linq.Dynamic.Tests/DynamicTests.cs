@@ -46,8 +46,8 @@ namespace System.Linq.Dynamic.Tests
             //Assert
             Helper.ExpectException<ArgumentNullException>(() => DynamicQueryable.Where(null, "Id=1"));
             Helper.ExpectException<ArgumentNullException>(() => qry.Where(null));
-            Helper.ExpectException<ArgumentException>(() => qry.Where(""));
-            Helper.ExpectException<ArgumentException>(() => qry.Where(" "));
+            Helper.ExpectException<ArgumentNullException>(() => qry.Where(""));
+            Helper.ExpectException<ArgumentNullException>(() => qry.Where(" "));
         }    
         
         [TestMethod]
@@ -108,8 +108,8 @@ namespace System.Linq.Dynamic.Tests
 
             Helper.ExpectException<ArgumentNullException>(() => DynamicQueryable.OrderBy(null, "Id"));
             Helper.ExpectException<ArgumentNullException>(() => qry.OrderBy(null));
-            Helper.ExpectException<ArgumentException>(() => qry.OrderBy(""));
-            Helper.ExpectException<ArgumentException>(() => qry.OrderBy(" "));
+            Helper.ExpectException<ArgumentNullException>(() => qry.OrderBy(""));
+            Helper.ExpectException<ArgumentNullException>(() => qry.OrderBy(" "));
         }    
 
         [TestMethod]
@@ -175,8 +175,8 @@ namespace System.Linq.Dynamic.Tests
 
             Helper.ExpectException<ArgumentNullException>(() => DynamicQueryable.Select(null, "Id"));
             Helper.ExpectException<ArgumentNullException>(() => qry.Select(null));
-            Helper.ExpectException<ArgumentException>(() => qry.Select(""));
-            Helper.ExpectException<ArgumentException>(() => qry.Select(" "));
+            Helper.ExpectException<ArgumentNullException>(() => qry.Select(""));
+            Helper.ExpectException<ArgumentNullException>(() => qry.Select(" "));
         }
 
         [TestMethod]
@@ -228,12 +228,12 @@ namespace System.Linq.Dynamic.Tests
 
             Helper.ExpectException<ArgumentNullException>(() => DynamicQueryable.GroupBy((IQueryable<string>)null, "Id"));
             Helper.ExpectException<ArgumentNullException>(() => qry.GroupBy(null));
-            Helper.ExpectException<ArgumentException>(() => qry.GroupBy(""));
-            Helper.ExpectException<ArgumentException>(() => qry.GroupBy(" "));
+            Helper.ExpectException<ArgumentNullException>(() => qry.GroupBy(""));
+            Helper.ExpectException<ArgumentNullException>(() => qry.GroupBy(" "));
 
             Helper.ExpectException<ArgumentNullException>(() => qry.GroupBy("Id", (string)null));
-            Helper.ExpectException<ArgumentException>(() => qry.GroupBy("Id", ""));
-            Helper.ExpectException<ArgumentException>(() => qry.GroupBy("Id", " "));
+            Helper.ExpectException<ArgumentNullException>(() => qry.GroupBy("Id", ""));
+            Helper.ExpectException<ArgumentNullException>(() => qry.GroupBy("Id", " "));
         }
 
         [TestMethod]

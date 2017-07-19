@@ -41,9 +41,6 @@
     <AssemblyOriginatorKeyFile>..\System.Linq.Dynamic\Properties\key.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="FluentValidationNA">
-      <HintPath>..\packages\FluentValidationNA.1.2.16\lib\net35\FluentValidationNA.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Core">
@@ -92,7 +89,6 @@
     <None Include="..\System.Linq.Dynamic\Properties\key.snk">
       <Link>key.snk</Link>
     </None>
-    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\System.Linq.Dynamic.For35\System.Linq.Dynamic.For35.csproj">
