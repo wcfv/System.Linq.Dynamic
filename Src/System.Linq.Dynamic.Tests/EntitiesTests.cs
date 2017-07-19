@@ -17,7 +17,6 @@ namespace System.Linq.Dynamic.Tests
     {
         BlogContext _context;
 
-
         public TestContext TestContext { get; set; }
 
         #region Entities Test Support
@@ -39,7 +38,7 @@ namespace System.Linq.Dynamic.Tests
         [TestInitialize()]
         public void MyTestInitialize()
         {
-            var connectionString = String.Format(@"Data Source=(localdb)\v11.0;Initial Catalog=DynamicLinqTestDb_{0};Integrated Security=True", TestContext.TestName);
+            var connectionString = String.Format(@"Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=DynamicLinqTestDb_{0};Integrated Security=True", TestContext.TestName);
 
             _context = new BlogContext(connectionString);
             _context.Database.Delete();
@@ -445,6 +444,24 @@ namespace System.Linq.Dynamic.Tests
                 Assert.AreEqual(expectedRow.Key, testRow.Key);
                 Assert.AreEqual(expectedRow.Reads, testRow.Reads);
             }
+        }
+
+        #endregion
+
+        #region Default If Empty Tests
+
+        [TestMethod]
+        public void DefaultIfEmpty_AsStringExpressions()
+        {
+            //Arrange
+            PopulateTestData();
+
+            //Act
+            var nullEnumExpected = _context.Blogs.SelectMany(blog => _context.Posts.Where(post => post.BlogId == -1).DefaultIfEmpty<Post>());
+            var nullEnumTest = _context.Blogs.SelectMany("@0.Posts.Where(it.BlogId == -1).DefaultIfEmpty()", new[] { _context });
+
+            //Assert
+            CollectionAssert.AreEqual(nullEnumExpected.ToArray(), nullEnumTest.ToDynamicArray());
         }
 
         #endregion

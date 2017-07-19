@@ -8,93 +8,7 @@ namespace System.Linq.Dynamic.Tests
     [TestClass]
     public class BasicTests
     {
-        #region Aggregates
-
-        [TestMethod]
-        public void Any()
-        {
-            //Arrange
-            IQueryable testListFull = User.GenerateSampleModels(100).AsQueryable();
-            IQueryable testListOne = User.GenerateSampleModels(1).AsQueryable();
-            IQueryable testListNone = User.GenerateSampleModels(0).AsQueryable();
-
-            //Act
-            var resultFull = testListFull.Any();
-            var resultOne = testListOne.Any();
-            var resultNone = testListNone.Any();
-
-            //Assert
-            Assert.IsTrue(resultFull);
-            Assert.IsTrue(resultOne);
-            Assert.IsFalse(resultNone);
-        }
-
-        [TestMethod]
-        public void Contains()
-        {
-            //Arrange
-            var baseQuery = User.GenerateSampleModels(100).AsQueryable();
-            var containsList = new List<string>() { "User1", "User5", "User10" };
-
-
-            //Act
-            var realQuery = baseQuery.Where(x => containsList.Contains(x.UserName)).Select(x => x.Id);
-            var testQuery = baseQuery.Where("@0.Contains(UserName)", containsList).Select("Id");
-
-            //Assert
-            CollectionAssert.AreEqual(realQuery.ToArray(), testQuery.Cast<Guid>().ToArray());
-        }
-
-        [TestMethod]
-        public void Count()
-        {
-            //Arrange
-            IQueryable testListFull = User.GenerateSampleModels(100).AsQueryable();
-            IQueryable testListOne = User.GenerateSampleModels(1).AsQueryable();
-            IQueryable testListNone = User.GenerateSampleModels(0).AsQueryable();
-
-            //Act
-            var resultFull = testListFull.Count();
-            var resultOne = testListOne.Count();
-            var resultNone = testListNone.Count();
-
-            //Assert
-            Assert.AreEqual(100, resultFull);
-            Assert.AreEqual(1, resultOne);
-            Assert.AreEqual(0, resultNone);
-        }
-
-        [TestMethod]
-        public void In()
-        {
-            //Arrange
-            var testRange = Enumerable.Range(1, 100).ToArray();
-            var testModels = User.GenerateSampleModels(10);
-            var testModelByUsername = String.Format("Username in (\"{0}\",\"{1}\",\"{2}\")", testModels[0].UserName, testModels[1].UserName, testModels[2].UserName);
-            var testInExpression = new int[] { 2, 4, 6, 8 };
-            var nullableTestInExpression = new int?[] { 2, 4, 6, 8 };
-
-            //Act
-            var result1 = testRange.AsQueryable().Where("it in (2,4,6,8)").ToArray();
-            var result2 = testModels.AsQueryable().Where(testModelByUsername).ToArray();
-            var result3 = testModels.AsQueryable().Where("Id in (@0, @1, @2)", testModels[0].Id, testModels[1].Id, testModels[2].Id).ToArray();
-            var result4 = testRange.AsQueryable().Where("it in @0", testInExpression).ToArray();
-            var result5 = testModels.AsQueryable().Where("NullableAge in (1,2,3)").ToArray();
-            Helper.ExpectException<InvalidOperationException>(() => testModels.AsQueryable().Where("NullableAge in @0", testInExpression).ToArray());
-            var result6 = testModels.AsQueryable().Where("NullableAge in @0", nullableTestInExpression).ToArray();
-
-            //Assert
-            CollectionAssert.AreEqual(new int[] { 2, 4, 6, 8 }, result1);
-            CollectionAssert.AreEqual(testModels.Take(3).ToArray(), result2);
-            CollectionAssert.AreEqual(testModels.Take(3).ToArray(), result3);
-            CollectionAssert.AreEqual(new int[] { 2, 4, 6, 8 }, result4);
-            CollectionAssert.AreEqual(testModels.Where(x => x.NullableAge == 1 || x.NullableAge == 2 || x.NullableAge == 3).ToArray(), result5);
-            CollectionAssert.AreEqual(testModels.Where(x => nullableTestInExpression.Contains(x.NullableAge)).ToArray(), result6);
-        }
-
-        #endregion
-
-        #region Adjustors
+        #region Adjusters
 
         [TestMethod]
         public void Skip()
@@ -139,6 +53,7 @@ namespace System.Linq.Dynamic.Tests
         [TestMethod]
         public void Reverse()
         {
+            //Arrange
             var testList = User.GenerateSampleModels(100);
             IQueryable testListQry = testList.AsQueryable();
 
@@ -149,7 +64,141 @@ namespace System.Linq.Dynamic.Tests
             CollectionAssert.AreEqual(Enumerable.Reverse(testList).ToArray(), result.Cast<User>().ToArray());
         }
 
+        [TestMethod]
+        public void Distinct()
+        {
+            //Arrange
+            var testList = User.GenerateSampleModels(100);
+            IQueryable testListQry = testList.AsQueryable();
+
+            //Act
+            var result = BasicQueryable.Distinct(testListQry);
+
+            //Assert
+            CollectionAssert.AreEqual(Enumerable.Distinct(testList).ToArray(), result.Cast<User>().ToArray());
+        }
+
+        [TestMethod]
+        public void DefaultIfEmpty()
+        {
+            //Arrange
+            IQueryable testListFull = User.GenerateSampleModels(100).AsQueryable();
+            IQueryable testListNone = Enumerable.Empty<User>().AsQueryable();
+
+            //Act
+            var resultFull = testListFull.DefaultIfEmpty();
+            var resultNone = testListNone.DefaultIfEmpty();
+
+            //Assert
+            CollectionAssert.AreEqual(testListFull.Cast<User>().ToArray(), resultFull.Cast<User>().ToArray());
+            CollectionAssert.AreEqual(new User[] { null }.Cast<User>().ToArray(), resultNone.Cast<User>().ToArray());
+        }
+
         #endregion
+
+        #region Aggregates
+
+        [TestMethod]
+        public void Any()
+        {
+            //Arrange
+            IQueryable testListFull = User.GenerateSampleModels(100).AsQueryable();
+            IQueryable testListOne = User.GenerateSampleModels(1).AsQueryable();
+            IQueryable testListNone = User.GenerateSampleModels(0).AsQueryable();
+
+            //Act
+            var resultFull = testListFull.Any();
+            var resultOne = testListOne.Any();
+            var resultNone = testListNone.Any();
+
+            //Assert
+            Assert.IsTrue(resultFull);
+            Assert.IsTrue(resultOne);
+            Assert.IsFalse(resultNone);
+        }
+
+        [TestMethod]
+        public void Contains()
+        {
+            //Arrange
+            var baseQuery = User.GenerateSampleModels(100).AsQueryable();
+            var containsList = new List<string>() { "User1", "User5", "User10" };
+
+            //Act
+            var realQuery = baseQuery.Where(x => containsList.Contains(x.UserName)).Select(x => x.Id);
+            var testQuery = baseQuery.Where("@0.Contains(UserName)", containsList).Select("Id");
+
+            //Assert
+            CollectionAssert.AreEqual(realQuery.ToArray(), testQuery.Cast<Guid>().ToArray());
+        }
+
+        [TestMethod]
+        public void Count()
+        {
+            //Arrange
+            IQueryable testListFull = User.GenerateSampleModels(100).AsQueryable();
+            IQueryable testListOne = User.GenerateSampleModels(1).AsQueryable();
+            IQueryable testListNone = User.GenerateSampleModels(0).AsQueryable();
+
+            //Act
+            var resultFull = testListFull.Count();
+            var resultOne = testListOne.Count();
+            var resultNone = testListNone.Count();
+
+            //Assert
+            Assert.AreEqual(100, resultFull);
+            Assert.AreEqual(1, resultOne);
+            Assert.AreEqual(0, resultNone);
+        }
+
+        [TestMethod]
+        public void LongCount()
+        {
+            //Arrange
+            IQueryable testListFull = User.GenerateSampleModels(100).AsQueryable();
+            IQueryable testListOne = User.GenerateSampleModels(1).AsQueryable();
+            IQueryable testListNone = User.GenerateSampleModels(0).AsQueryable();
+
+            //Act
+            var resultFull = testListFull.LongCount();
+            var resultOne = testListOne.LongCount();
+            var resultNone = testListNone.LongCount();
+
+            //Assert
+            Assert.AreEqual(100L, resultFull);
+            Assert.AreEqual(1L, resultOne);
+            Assert.AreEqual(0L, resultNone);
+        }
+
+        [TestMethod]
+        public void In()
+        {
+            //Arrange
+            var testRange = Enumerable.Range(1, 100).ToArray();
+            var testModels = User.GenerateSampleModels(10);
+            var testModelByUsername = String.Format("Username in (\"{0}\",\"{1}\",\"{2}\")", testModels[0].UserName, testModels[1].UserName, testModels[2].UserName);
+            var testInExpression = new int[] { 2, 4, 6, 8 };
+            var nullableTestInExpression = new int?[] { 2, 4, 6, 8 };
+
+            //Act
+            var result1 = testRange.AsQueryable().Where("it in (2,4,6,8)").ToArray();
+            var result2 = testModels.AsQueryable().Where(testModelByUsername).ToArray();
+            var result3 = testModels.AsQueryable().Where("Id in (@0, @1, @2)", testModels[0].Id, testModels[1].Id, testModels[2].Id).ToArray();
+            var result4 = testRange.AsQueryable().Where("it in @0", testInExpression).ToArray();
+            var result5 = testModels.AsQueryable().Where("NullableAge in (1,2,3)").ToArray();
+            Helper.ExpectException<InvalidOperationException>(() => testModels.AsQueryable().Where("NullableAge in @0", testInExpression).ToArray());
+            var result6 = testModels.AsQueryable().Where("NullableAge in @0", nullableTestInExpression).ToArray();
+
+            //Assert
+            CollectionAssert.AreEqual(new int[] { 2, 4, 6, 8 }, result1);
+            CollectionAssert.AreEqual(testModels.Take(3).ToArray(), result2);
+            CollectionAssert.AreEqual(testModels.Take(3).ToArray(), result3);
+            CollectionAssert.AreEqual(new int[] { 2, 4, 6, 8 }, result4);
+            CollectionAssert.AreEqual(testModels.Where(x => x.NullableAge == 1 || x.NullableAge == 2 || x.NullableAge == 3).ToArray(), result5);
+            CollectionAssert.AreEqual(testModels.Where(x => nullableTestInExpression.Contains(x.NullableAge)).ToArray(), result6);
+        }
+
+#endregion
 
         #region Executors
 
@@ -269,9 +318,6 @@ namespace System.Linq.Dynamic.Tests
 #endif
         }
 
-
         #endregion
-
     }
-
 }

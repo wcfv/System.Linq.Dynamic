@@ -1,10 +1,7 @@
 ﻿using FluentValidationNA;
-using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
 
 namespace System.Linq.Dynamic
 {
@@ -71,9 +68,39 @@ namespace System.Linq.Dynamic
                 new Type[] { source.ElementType }, source.Expression));
         }
 
+        /// <summary>
+        /// Returns distinct elements from a sequence.
+        /// </summary>
+        /// <param name="source">A sequence of values to distinct.</param>
+        /// <returns>A <see cref="IQueryable"/> contains distinct elements from source.</returns>
+        public static IQueryable Distinct(this IQueryable source)
+        {
+            Validate.Argument(source, "source").IsNotNull().Check();
+
+            return source.Provider.CreateQuery(Expression.Call(
+                typeof(Queryable), "Distinct",
+                new Type[] { source.ElementType }, source.Expression));
+        }
+
+        /// <summary>
+        /// Returns the elements of the specified sequence or the type parameter's default value in a singleton collection if the sequence is empty.
+        /// </summary>
+        /// <param name="source">A sequence to return a default value for if empty.</param>
+        /// <returns>An <see cref="IQueryable"/> that contains default(TSource) if source is empty; otherwise, source.</returns>
+        public static IQueryable DefaultIfEmpty(this IQueryable source)
+        {
+            Validate.Argument(source, "source").IsNotNull().Check();
+
+            return source.Provider.CreateQuery(
+                Expression.Call(
+                    typeof(Queryable), "DefaultIfEmpty",
+                    new Type[] { source.ElementType }, source.Expression));
+        }
+
         #endregion
 
         #region Aggregates
+
         /// <summary>
         /// Determines whether a sequence contains any elements.
         /// </summary>
@@ -101,6 +128,21 @@ namespace System.Linq.Dynamic
             return (int)source.Provider.Execute(
                 Expression.Call(
                     typeof(Queryable), "Count",
+                    new Type[] { source.ElementType }, source.Expression));
+        }
+
+        /// <summary>
+        /// Returns the number of elements in a sequence.
+        /// </summary>
+        /// <param name="source">The <see cref="IQueryable"/> that contains the elements to be counted.</param>
+        /// <returns>The number of elements in the input sequence.</returns>
+        public static long LongCount(this IQueryable source)
+        {
+            Validate.Argument(source, "source").IsNotNull().Check();
+
+            return (long)source.Provider.Execute(
+                Expression.Call(
+                    typeof(Queryable), "LongCount",
                     new Type[] { source.ElementType }, source.Expression));
         }
 
@@ -181,8 +223,6 @@ namespace System.Linq.Dynamic
                 new Type[] { source.ElementType }, source.Expression));
         }
 
-
-
         /// <summary>
         /// Returns the first element of a sequence, or a default value if the sequence contains no elements.
         /// </summary>
@@ -201,8 +241,6 @@ namespace System.Linq.Dynamic
                 new Type[] { source.ElementType }, source.Expression));
         }
 
-
-
         /// <summary>
         /// Returns the last element of a sequence.
         /// </summary>
@@ -220,8 +258,6 @@ namespace System.Linq.Dynamic
                 typeof(Queryable), "Last",
                 new Type[] { source.ElementType }, source.Expression));
         }
-
-
 
         /// <summary>
         /// Returns the last element of a sequence, or a default value if the sequence contains no elements.
@@ -263,7 +299,6 @@ namespace System.Linq.Dynamic
             }
         }
 
-
 #if !NET35
         /// <summary>
         /// Creates an array of dynamic objects from a <see cref="IEnumerable"/>.
@@ -277,9 +312,6 @@ namespace System.Linq.Dynamic
         }
 #endif
 
-
         #endregion
-
-
     }
 }

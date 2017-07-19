@@ -111,6 +111,50 @@ namespace System.Linq.Dynamic.Tests
             Assert.AreEqual(TestEnum.Var5, result4.Single());
             Assert.AreEqual(TestEnum.Var5, result5.Single());
         }
+
+        [TestMethod]
+        public void ExpressionTests_IntegerQualifiers()
+        {
+            //Arrange
+            var valuesL = new[] { 1L, 2L, 3L }.AsQueryable();
+            var resultValuesL = new[] { 2L, 3L }.AsQueryable();
+
+            var valuesU = new[] { 1U, 2U, 3U }.AsQueryable();
+            var resultValuesU = new[] { 2U, 3U }.AsQueryable();
+
+            var valuesUL = new[] { 1UL, 2UL, 3UL }.AsQueryable();
+            var resultValuesUL = new[] { 2UL, 3UL }.AsQueryable();
+
+            var valuesNeL = new[] { -1L, -2L, -3L }.AsQueryable();
+            var resultValuesNeL = new[] { -2L, -3L }.AsQueryable();
+
+            //Act
+            var resultL = valuesL.Where("it in (2L, 3L)").Cast<long>().ToArray();
+            var resultNeL = valuesNeL.Where("it in (-2L, -3L)").Cast<long>().ToArray();
+            var resultU = valuesU.Where("it in (2U, 3U)").Cast<uint>().ToArray();
+            var resultUL = valuesUL.Where("it in (2UL, 3UL)").Cast<ulong>().ToArray();
+
+            //Assert
+            CollectionAssert.AreEqual(resultL, resultValuesL.ToArray());
+            CollectionAssert.AreEqual(resultNeL, resultValuesNeL.ToArray());
+            CollectionAssert.AreEqual(resultU, resultValuesU.ToArray());
+            CollectionAssert.AreEqual(resultUL, resultValuesUL.ToArray());
+        }
+
+        [TestMethod]
+        public void ExpressionTests_IntegerQualifiers_Exceptions()
+        {
+            //Arrange
+            var values = new[] { 1L, 2L, 3L }.AsQueryable();
+
+            //Assert
+            Helper.ExpectException<ParseException>(() => values.Where("it in (2LL)"));
+            Helper.ExpectException<ParseException>(() => values.Where("it in (2UU)"));
+            Helper.ExpectException<ParseException>(() => values.Where("it in (2LU)"));
+            Helper.ExpectException<ParseException>(() => values.Where("it in (2B)"));
+            Helper.ExpectException<ParseException>(() => values.Where("it in (-2U)"));
+        }
+
         [TestMethod]
         public void ExpressionTests_CompareWithDateTime()
         {
@@ -271,8 +315,6 @@ namespace System.Linq.Dynamic.Tests
                 GlobalConfig.AreContextKeywordsEnabled = true;
             }
         }
-
-
 
         [TestMethod]
         public void ExpressionTests_FirstOrDefault()

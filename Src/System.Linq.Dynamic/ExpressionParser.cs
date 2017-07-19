@@ -1,16 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Text;
 using System.Collections;
 using System.Globalization;
 
 namespace System.Linq.Dynamic
 {
-
     internal class ExpressionParser
     {
         struct Token
@@ -147,6 +143,7 @@ namespace System.Linq.Dynamic
 
         interface IEnumerableSignatures
         {
+            void DefaultIfEmpty();
             void Where(bool predicate);
             void Any();
             void Any(bool predicate);
@@ -159,6 +156,8 @@ namespace System.Linq.Dynamic
             void All(bool predicate);
             void Count();
             void Count(bool predicate);
+            void LongCount();
+            void LongCount(bool predicate);
             void Min(object selector);
             void Max(object selector);
             void Sum(int selector);
@@ -182,6 +181,7 @@ namespace System.Linq.Dynamic
             void Average(decimal selector);
             void Average(decimal? selector);
             void Select(object selector);
+            void Union(object source);
             void OrderBy(object selector);
             void OrderByDescending(object selector);
             void Contains(object selector);
@@ -236,7 +236,7 @@ namespace System.Linq.Dynamic
             typeof(Convert),
             typeof(Uri),
 #if !NET35 && !SILVERLIGHT
-			typeof(System.Data.Objects.EntityFunctions)
+			typeof(Data.Objects.EntityFunctions)
 #endif
         };
 
@@ -440,7 +440,9 @@ namespace System.Linq.Dynamic
                     while (_token.id != TokenId.CloseParen)
                     {
                         NextToken();
-                        Expression right = ParsePrimary();
+
+                        //we need to parse unary expressions because otherwise 'in' clause will fail in use cases like 'in (-1, -1)' or 'in (!true)'
+                        Expression right = ParseUnary();
 
                         //check for direct type match
                         if (identifier.Type != right.Type) 
@@ -803,12 +805,31 @@ namespace System.Linq.Dynamic
         {
             ValidateToken(TokenId.IntegerLiteral);
             string text = _token.text;
+            string qualifier = null;
+            char last = text[text.Length - 1];
+            if (Char.IsLetter(last))
+            {
+                int pos = text.Length - 1, count = 0;
+                while (Char.IsLetter(text[pos]))
+                {
+                    ++count;
+                    --pos;
+                }
+                qualifier = text.Substring(text.Length - count, count);
+                text = text.Substring(0, text.Length - count);
+            }
             if (text[0] != '-')
             {
                 ulong value;
                 if (!UInt64.TryParse(text, out value))
                     throw ParseError(Res.InvalidIntegerLiteral, text);
                 NextToken();
+                if (!string.IsNullOrEmpty(qualifier))
+                {
+                    if (qualifier == "U") return CreateLiteral((uint)value, text);
+                    if (qualifier == "L") return CreateLiteral((long)value, text);
+                    return CreateLiteral(value, text);
+                }
                 if (value <= (ulong)Int32.MaxValue) return CreateLiteral((int)value, text);
                 if (value <= (ulong)UInt32.MaxValue) return CreateLiteral((uint)value, text);
                 if (value <= (ulong)Int64.MaxValue) return CreateLiteral((long)value, text);
@@ -820,6 +841,11 @@ namespace System.Linq.Dynamic
                 if (!Int64.TryParse(text, out value))
                     throw ParseError(Res.InvalidIntegerLiteral, text);
                 NextToken();
+                if (!string.IsNullOrEmpty(qualifier))
+                {
+                    if (qualifier == "L") return CreateLiteral(value, text);
+                    else throw ParseError(Res.MinusCannotBeAppliedToUnsignedInteger);
+                }
                 if (value >= Int32.MinValue && value <= Int32.MaxValue)
                     return CreateLiteral((int)value, text);
                 return CreateLiteral(value, text);
@@ -998,7 +1024,7 @@ namespace System.Linq.Dynamic
             }
             ValidateToken(TokenId.CloseParen, Res.CloseParenOrCommaExpected);
             NextToken();
-            Type type = DynamicExpression.CreateClass(properties);
+            Type type = ClassFactory.Instance.GetDynamicClass(properties);
             MemberBinding[] bindings = new MemberBinding[properties.Count];
             for (int i = 0; i < bindings.Length; i++)
                 bindings[i] = Expression.Bind(type.GetProperty(properties[i].Name), expressions[i]);
@@ -1028,7 +1054,7 @@ namespace System.Linq.Dynamic
                 NextToken();
             }
 
-            // This is a shorthand for explicitely converting a string to something
+            // This is a shorthand for explicitly converting a string to something
             //
             bool shorthand = _token.id == TokenId.StringLiteral;
             if (_token.id == TokenId.OpenParen || shorthand)
@@ -1153,7 +1179,6 @@ namespace System.Linq.Dynamic
                 return Expression.Field(instance, (FieldInfo)member);
             }
         }
-
 
         static Type FindGenericType(Type generic, Type type)
         {
@@ -1433,8 +1458,7 @@ namespace System.Linq.Dynamic
                 (staticAccess ? BindingFlags.Static : BindingFlags.Instance);
             foreach (Type t in SelfAndBaseTypes(type))
             {
-                MemberInfo[] members = t.FindMembers(MemberTypes.Property | MemberTypes.Field,
-                    flags, Type.FilterNameIgnoreCase, memberName);
+                MemberInfo[] members = t.FindMembers(MemberTypes.Property | MemberTypes.Field, flags, Type.FilterNameIgnoreCase, memberName);
                 if (members.Length != 0) return members[0];
             }
             return null;
@@ -1446,8 +1470,7 @@ namespace System.Linq.Dynamic
                 (staticAccess ? BindingFlags.Static : BindingFlags.Instance);
             foreach (Type t in SelfAndBaseTypes(type))
             {
-                MemberInfo[] members = t.FindMembers(MemberTypes.Method,
-                    flags, Type.FilterNameIgnoreCase, methodName);
+                MemberInfo[] members = t.FindMembers(MemberTypes.Method, flags, Type.FilterNameIgnoreCase, methodName);
                 int count = FindBestMethod(members.Cast<MethodBase>(), args, out method);
                 if (count != 0) return count;
             }
@@ -1931,7 +1954,6 @@ namespace System.Linq.Dynamic
             return Expression.Call(null, GetStaticMethod(methodName, left, right), new[] { left, right });
         }
 
-        
         static void OptimizeForEqualityIfPossible(ref Expression left, ref Expression right)
         {
             // The goal here is to provide the way to convert some types from the string form in a way that is compatible with Linq-to-Entities.
@@ -1948,6 +1970,7 @@ namespace System.Linq.Dynamic
                 left = OptimizeStringForEqualityIfPossible((string)((ConstantExpression)left).Value, rightType) ?? left;
             }
         }
+
         static Expression OptimizeStringForEqualityIfPossible(string text, Type type)
         {
             DateTime dateTime;
@@ -2160,6 +2183,17 @@ namespace System.Linq.Dynamic
                         {
                             NextChar();
                         } while (Char.IsDigit(_ch));
+                        if (_ch == 'U' || _ch == 'L')
+                        {
+                            NextChar();
+                            if (_ch == 'L')
+                            {
+                                if (_text[_textPos - 1] == 'U') NextChar();
+                                else throw ParseError(_textPos, Res.InvalidIntegerQualifier, _text.Substring(_textPos - 1, 2));
+                            }
+                            ValidateExpression();
+                            break;
+                        }
                         if (_ch == '.')
                         {
                             t = TokenId.RealLiteral;
@@ -2207,6 +2241,12 @@ namespace System.Linq.Dynamic
             string id = _token.text;
             if (id.Length > 1 && id[0] == '@') id = id.Substring(1);
             return id;
+        }
+
+        void ValidateExpression()
+        {
+            if (Char.IsLetterOrDigit(_ch))
+                throw ParseError(_textPos, Res.ExpressionExpected);
         }
 
         void ValidateDigit()
