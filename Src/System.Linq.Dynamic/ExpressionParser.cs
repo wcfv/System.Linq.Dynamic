@@ -143,60 +143,64 @@ namespace System.Linq.Dynamic
 
         interface IEnumerableSignatures
         {
-            void DefaultIfEmpty();
-            void Where(bool predicate);
+            void All(bool predicate);
             void Any();
             void Any(bool predicate);
-            void First(bool predicate);
-            void FirstOrDefault(bool predicate);
-            void Single(bool predicate);
-            void SingleOrDefault(bool predicate);
-            void Last(bool predicate);
-            void LastOrDefault(bool predicate);
-            void All(bool predicate);
+            void Average(decimal? selector);
+            void Average(decimal selector);
+            void Average(double? selector);
+            void Average(double selector);
+            void Average(float? selector);
+            void Average(float selector);
+            void Average(int? selector);
+            void Average(int selector);
+            void Average(long? selector);
+            void Average(long selector);
+            void Contains(object selector);
             void Count();
             void Count(bool predicate);
-            void LongCount();
-            void LongCount(bool predicate);
-            void Min(object selector);
+            void DefaultIfEmpty();
+            void DefaultIfEmpty(object defaultValue);
+            void Distinct();
+            void First(bool predicate);
+            void FirstOrDefault(bool predicate);
+            void GroupBy(object selector);
+            void Last(bool predicate);
+            void LastOrDefault(bool predicate);
             void Max(object selector);
-            void Sum(int selector);
-            void Sum(int? selector);
-            void Sum(long selector);
-            void Sum(long? selector);
-            void Sum(float selector);
-            void Sum(float? selector);
-            void Sum(double selector);
-            void Sum(double? selector);
-            void Sum(decimal selector);
-            void Sum(decimal? selector);
-            void Average(int selector);
-            void Average(int? selector);
-            void Average(long selector);
-            void Average(long? selector);
-            void Average(float selector);
-            void Average(float? selector);
-            void Average(double selector);
-            void Average(double? selector);
-            void Average(decimal selector);
-            void Average(decimal? selector);
-            void Select(object selector);
-            void Union(object source);
+            void Min(object selector);
             void OrderBy(object selector);
             void OrderByDescending(object selector);
-            void Contains(object selector);
-
+            void Select(object selector);
+            void SelectMany(object selector);
+            void Single(bool predicate);
+            void SingleOrDefault(bool predicate);
+            void Skip(int count);
+            void SkipWhile(bool predicate);
+            void Sum(decimal? selector);
+            void Sum(decimal selector);
+            void Sum(double? selector);
+            void Sum(double selector);
+            void Sum(float? selector);
+            void Sum(float selector);
+            void Sum(int? selector);
+            void Sum(int selector);
+            void Sum(long? selector);
+            void Sum(long selector);
+            void Take(int count);
+            void TakeWhile(bool predicate);
+            void ThenBy(object selector);
+            void ThenByDescending(object selector);
+            void Where(bool predicate);
             void OfType(string type);
-            void Skip(int i);
-            void Take(int i);
 
             //Executors
-            void Single();
-            void SingleOrDefault();
             void First();
             void FirstOrDefault();
             void Last();
             void LastOrDefault();
+            void Single();
+            void SingleOrDefault();
         }
 
         // These shorthands have different name than actual type and therefore not recognized by default from the _predefinedTypes
@@ -236,7 +240,7 @@ namespace System.Linq.Dynamic
             typeof(Convert),
             typeof(Uri),
 #if !NET35 && !SILVERLIGHT
-			typeof(Data.Objects.EntityFunctions)
+            typeof(Data.Objects.EntityFunctions)
 #endif
         };
 
@@ -245,14 +249,14 @@ namespace System.Linq.Dynamic
         //
         static readonly Dictionary<string, TokenId> _predefinedAliases = new Dictionary<string, TokenId>()
         {
-            { "eq", TokenId.Equal }, 
+            { "eq", TokenId.Equal },
             { "ne", TokenId.ExclamationEqual },
             { "neq", TokenId.ExclamationEqual },
-            { "lt", TokenId.LessThan }, 
+            { "lt", TokenId.LessThan },
             { "le", TokenId.LessThanEqual },
-            { "gt", TokenId.GreaterThan }, 
+            { "gt", TokenId.GreaterThan },
             { "ge", TokenId.GreaterThanEqual },
-            { "and", TokenId.DoubleAmphersand }, 
+            { "and", TokenId.DoubleAmphersand },
             { "or", TokenId.DoubleBar },
             { "not", TokenId.Exclamation },
             { "mod", TokenId.Percent }
@@ -276,9 +280,11 @@ namespace System.Linq.Dynamic
         Dictionary<string, object> _symbols;
         IDictionary<string, object> _externals;
         Dictionary<Expression, string> _literals;
+
         ParameterExpression _it;
         ParameterExpression _parent;
         ParameterExpression _root;
+
         string _text;
         int _textPos;
         int _textLen;
@@ -300,13 +306,17 @@ namespace System.Linq.Dynamic
 
         void ProcessParameters(ParameterExpression[] parameters)
         {
-            foreach (ParameterExpression pe in parameters)
-                if (!String.IsNullOrEmpty(pe.Name))
-                    AddSymbol(pe.Name, pe);
-            if (parameters.Length == 1 && String.IsNullOrEmpty(parameters[0].Name))
+            foreach (ParameterExpression pe in parameters.Where(p => !string.IsNullOrEmpty(p.Name)))
+            {
+                AddSymbol(pe.Name, pe);
+            }
+
+            // If there is only 1 ParameterExpression, do also allow access using 'it'
+            if (parameters.Length == 1 && string.IsNullOrEmpty(parameters[0].Name))
             {
                 _parent = _it;
                 _it = parameters[0];
+
                 if (_root == null)
                     _root = _it;
             }
@@ -445,7 +455,7 @@ namespace System.Linq.Dynamic
                         Expression right = ParseUnary();
 
                         //check for direct type match
-                        if (identifier.Type != right.Type) 
+                        if (identifier.Type != right.Type)
                         {
                             //check for nullable type match
                             if (!identifier.Type.IsGenericType || identifier.Type.GetGenericTypeDefinition() != typeof(Nullable<>) || identifier.Type.GetGenericArguments()[0] != right.Type)
@@ -660,13 +670,13 @@ namespace System.Linq.Dynamic
                 switch (op.id)
                 {
                     case TokenId.Plus:
-                        if (left.Type == typeof (string) || right.Type == typeof (string))
+                        if (left.Type == typeof(string) || right.Type == typeof(string))
                         {
                             left = GenerateStringConcat(left, right);
                         }
                         else
                         {
-                            CheckAndPromoteOperands(typeof (IAddSignatures), op.text, ref left, ref right, op.pos);
+                            CheckAndPromoteOperands(typeof(IAddSignatures), op.text, ref left, ref right, op.pos);
                             left = GenerateAdd(left, right);
                         }
                         break;
@@ -713,8 +723,7 @@ namespace System.Linq.Dynamic
             {
                 Token op = _token;
                 NextToken();
-                if (op.id == TokenId.Minus && (_token.id == TokenId.IntegerLiteral ||
-                    _token.id == TokenId.RealLiteral))
+                if (op.id == TokenId.Minus && (_token.id == TokenId.IntegerLiteral || _token.id == TokenId.RealLiteral))
                 {
                     _token.text = "-" + _token.text;
                     _token.pos = op.pos;
@@ -890,7 +899,7 @@ namespace System.Linq.Dynamic
             return e;
         }
 
-        [SuppressMessage("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily", Justification="This is not true in this case.")]
+        [SuppressMessage("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily", Justification = "This is not true in this case.")]
         Expression ParseIdentifier()
         {
             ValidateToken(TokenId.Identifier);
@@ -1013,7 +1022,7 @@ namespace System.Linq.Dynamic
                 }
                 else
                 {
-                    if (!TryGetMemberName(expr, out propName)) 
+                    if (!TryGetMemberName(expr, out propName))
                         throw ParseError(exprPos, Res.MissingAsClause);
                 }
 
@@ -1059,7 +1068,7 @@ namespace System.Linq.Dynamic
             bool shorthand = _token.id == TokenId.StringLiteral;
             if (_token.id == TokenId.OpenParen || shorthand)
             {
-                Expression[] args = shorthand 
+                Expression[] args = shorthand
                     ? new Expression[] { ParseStringLiteral() }
                     : ParseArgumentList();
 
@@ -1115,7 +1124,7 @@ namespace System.Linq.Dynamic
                 if (method != null && (bool)method.Invoke(null, arguments))
                     return Expression.Constant(arguments[1], type);
             }
-            
+
             throw ParseError(errorPos, Res.CannotConvertValue, GetTypeName(exprType), GetTypeName(type));
         }
 
@@ -1200,64 +1209,66 @@ namespace System.Linq.Dynamic
 
         Expression ParseAggregate(Expression instance, Type elementType, string methodName, int errorPos)
         {
-            var oldParent = _parent;
+            var innerIt = Expression.Parameter(elementType, "");
 
-            ParameterExpression outerIt = _it;
-            ParameterExpression innerIt = Expression.Parameter(elementType, "");
+            Expression[] args;
 
-            _parent = _it;
-
-            if (methodName == "Contains" || methodName == "OfType" || methodName == "Skip" || methodName == "Take")
+            if (methodName == "Contains" || methodName == "Skip" || methodName == "Take")
             {
-                //for any method that acts on the parent element type, we need to specify the outerIt as scope.
-                _it = outerIt;
+                //for any method that acts on the parent element type, no need to use inner during parse
+                args = ParseArgumentList();
             }
             else
             {
+                var oldParent = _parent;
+                _parent = _it;
                 _it = innerIt;
+
+                args = ParseArgumentList();
+
+                _it = _parent;
+                _parent = oldParent;
             }
-
-            Expression[] args = ParseArgumentList();
-
-            _it = outerIt;
-            _parent = oldParent;
 
             MethodBase signature;
             if (FindMethod(typeof(IEnumerableSignatures), methodName, false, args, out signature) != 1)
                 throw ParseError(errorPos, Res.NoApplicableAggregate, methodName);
+
             Type[] typeArgs;
-            if (signature.Name == "Min" || signature.Name == "Max" || signature.Name == "Select" ||
-                signature.Name == "OrderBy" || signature.Name == "OrderByDescending")
+            if (new[] { "Min", "Max", "Select", "OrderBy", "OrderByDescending", "ThenBy", "ThenByDescending", "GroupBy" }.Contains(signature.Name))
             {
-                typeArgs = new Type[] {elementType, args[0].Type};
+                typeArgs = new Type[] { elementType, args[0].Type };
             }
             else if (signature.Name == "OfType")
             {
-                return OfTypeMethodCallExpression(instance, errorPos, args, signature);
+                typeArgs = GetOfTypeMethodTypeArgs(errorPos, args);
             }
             else
             {
-                typeArgs = new Type[] {elementType};
+                typeArgs = new Type[] { elementType };
             }
 
-            if (signature.Name == "Contains" || signature.Name == "Take" || signature.Name == "Skip")
-            {
-                args = new Expression[] { instance, args[0] };
-            }
-            else if (args.Length == 0)
+
+            if (args.Length == 0 || signature.Name == "OfType")
             {
                 args = new Expression[] { instance };
             }
             else
             {
-                args = new Expression[] { instance, Expression.Lambda(args[0], innerIt) };
+                if (new[] { "Contains", "Take", "Skip", "DefaultIfEmpty" }.Contains(signature.Name))
+                {
+                    args = new Expression[] { instance, args[0] };
+                }
+                else
+                {
+                    args = new Expression[] { instance, Expression.Lambda(args[0], innerIt) };
+                }
             }
 
             return Expression.Call(typeof(Enumerable), signature.Name, typeArgs, args);
         }
 
-        private static Expression OfTypeMethodCallExpression(Expression instance, int errorPos, Expression[] args,
-            MethodBase signature)
+        private static Type[] GetOfTypeMethodTypeArgs(int errorPos, Expression[] args)
         {
             var constExpression = args[0] as ConstantExpression;
             if (constExpression == null) throw ParseError(errorPos, "Expected OfType(\"Type\")");
@@ -1272,7 +1283,7 @@ namespace System.Linq.Dynamic
             if (parsedType == null)
                 throw ParseError(errorPos, "String constant representing Type expected for OfType aggregate method.");
 
-            return Expression.Call(typeof (Enumerable), signature.Name, new[] { parsedType }, instance);
+            return new[] { parsedType };
         }
 
         Expression[] ParseArgumentList()
@@ -1362,19 +1373,19 @@ namespace System.Linq.Dynamic
         static bool TryGetMemberName(Expression expression, out string memberName)
         {
             var memberExpression = expression as MemberExpression;
-            if( memberExpression != null )
+            if (memberExpression != null)
             {
                 memberName = memberExpression.Member.Name;
                 return true;
             }
-//#if !NET35
-//            var dynamicExpression = expression as Expressions.DynamicExpression;
-//            if (dynamicExpression != null)
-//            {
-//                memberName = ((GetMemberBinder)dynamicExpression.Binder).Name;
-//                return true;
-//            }
-//#endif
+            //#if !NET35
+            //            var dynamicExpression = expression as Expressions.DynamicExpression;
+            //            if (dynamicExpression != null)
+            //            {
+            //                memberName = ((GetMemberBinder)dynamicExpression.Binder).Name;
+            //                return true;
+            //            }
+            //#endif
 
             memberName = null;
             return false;
@@ -1455,7 +1466,7 @@ namespace System.Linq.Dynamic
         static MemberInfo FindPropertyOrField(Type type, string memberName, bool staticAccess)
         {
             BindingFlags flags = BindingFlags.Public | BindingFlags.DeclaredOnly |
-                (staticAccess ? BindingFlags.Static : BindingFlags.Instance);
+                                 (staticAccess ? BindingFlags.Static : BindingFlags.Instance);
             foreach (Type t in SelfAndBaseTypes(type))
             {
                 MemberInfo[] members = t.FindMembers(MemberTypes.Property | MemberTypes.Field, flags, Type.FilterNameIgnoreCase, memberName);
@@ -1463,11 +1474,11 @@ namespace System.Linq.Dynamic
             }
             return null;
         }
-        
+
         int FindMethod(Type type, string methodName, bool staticAccess, Expression[] args, out MethodBase method)
         {
             BindingFlags flags = BindingFlags.Public | BindingFlags.DeclaredOnly |
-                (staticAccess ? BindingFlags.Static : BindingFlags.Instance);
+                                 (staticAccess ? BindingFlags.Static : BindingFlags.Instance);
             foreach (Type t in SelfAndBaseTypes(type))
             {
                 MemberInfo[] members = t.FindMembers(MemberTypes.Method, flags, Type.FilterNameIgnoreCase, methodName);
